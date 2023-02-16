@@ -2,6 +2,28 @@
 
 frida-stalker based system call tracer on windows(x64).
 
+```
+[483]NtWaitForWorkViaWorkerFactory
+test.exe!0x7ff91fbaf262
+[35]NtQueryVirtualMemory
+test.exe!0x7ff91fbaf262
+[35]NtQueryVirtualMemory
+test.exe!0x7ff91fbaf262
+[35]NtQueryVirtualMemory
+test.exe!0x7ff91fbb06d2
+[199]NtCreateThreadEx
+[+] Following thread 17876
+test.exe!0x7ff91fbb06d2
+[7]NtDeviceIoControlFile
+[+] Unfollowing thread 17876
+test.exe!0x7ff91fbaeee2
+[7]NtDeviceIoControlFile
+test.exe!0x7ff91fbaeee2
+[7]NtDeviceIoControlFile
+[+] Unfollowing thread 6344
+[+] Unfollowing thread 6124
+```
+
 # Usage
 
 ```
