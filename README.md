@@ -24,6 +24,9 @@ test.exe!0x7ff91fbaeee2
 [+] Unfollowing thread 6124
 ```
 
+It can also accurately identify types that cover up system calls, such as the project below.  
+https://github.com/passthehashbrowns/hiding-your-syscalls
+
 # Usage
 
 ```

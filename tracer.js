@@ -39,6 +39,10 @@ var module = Process.getModuleByName("ntdll.dll");
 var symbols = module.enumerateExports();
 
 var sysDict = {};
+var sysAddressList = [];
+var ThreadStepsDict = {};
+var ThreadsFollowed = {};
+
 for (var i = 0; i < symbols.length; i++) {
   const sysName = symbols[i].name;
   if (
@@ -48,10 +52,9 @@ for (var i = 0; i < symbols.length; i++) {
     const symAddr = symbols[i].address;
     const sysNumber = symAddr.add(0x04).readUInt();
     sysDict[sysNumber] = sysName;
+    sysAddressList.push(parseInt(symAddr));
   }
 }
-
-var ThreadsFollowed = {};
 
 function isThreadFollowed(tid) {
   if (ThreadsFollowed[tid]) {
@@ -62,6 +65,13 @@ function isThreadFollowed(tid) {
 }
 
 function onMatch(context) {
+  var threadId = Process.getCurrentThreadId();
+  var ThreadSteps = ThreadStepsDict[threadId];
+  // ignore frida's thread
+  if (parseInt(context.rip) + 2 != ThreadSteps[0]) {
+    return;
+  }
+
   var calledNumber = context.rax.toInt32();
   var sysName = sysDict[calledNumber];
   LOG(
@@ -69,7 +79,17 @@ function onMatch(context) {
       DebugSymbol.fromAddress(context.rip).address
     }`
   );
-  LOG(`[${calledNumber}]${sysName}`, { c: Color.Green });
+
+  var inNtDllFlag = false;
+  if (sysAddressList.indexOf(ThreadSteps[5]) != -1) {
+    inNtDllFlag = true;
+  }
+
+  if (inNtDllFlag) {
+    LOG(`[${calledNumber}]${sysName}`, { c: Color.Green });
+  } else {
+    LOG(`[${calledNumber}]${sysName}`, { c: Color.Blue });
+  }
   if (sysName == "NtCreateThread" || sysName == "NtCreateThreadEx") {
     var funcPtr = ptr(context.rsp.add(0x28).readU64());
     Interceptor.attach(funcPtr, {
@@ -96,6 +116,12 @@ function FollowThread(tid) {
     transform: function (iterator) {
       const instruction = iterator.next();
       do {
+        var threadId = Process.getCurrentThreadId();
+        if (ThreadStepsDict[threadId] == undefined) {
+          ThreadStepsDict[threadId] = [0, 0, 0, 0, 0, 0];
+        }
+        ThreadStepsDict[threadId].unshift(parseInt(instruction.address));
+        ThreadStepsDict[threadId].pop();
         if (instruction.mnemonic === "syscall") {
           iterator.putCallout(onMatch);
         }
